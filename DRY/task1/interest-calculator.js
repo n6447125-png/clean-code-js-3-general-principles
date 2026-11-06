@@ -1,7 +1,8 @@
-const AGE = 60;
+const SENIOR_AGE = 60;
 const INTEREST_PERCENT = 4.5;
 const SENIOR_PERCENT = 5.5;
 const BONUS_AGE = 13;
+const PERCENT_DIVISOR = 100;
 
 function durationBetweenDatesInYears(from, to) {
     const start = new Date(from);
@@ -19,48 +20,30 @@ function durationBetweenDatesInYears(from, to) {
     return diffYear;
 }
 
-
 function durationSinceStartDateInYears(startDate) {
-    const start = new Date(startDate);
-    const end = new Date();
-
-    const diffYear = end.getFullYear() - start.getFullYear();
-
-    if (end.getMonth() < start.getMonth()) {
-        return diffYear - 1;
-    }
-    if (end.getMonth() === start.getMonth() && end.getDate() < start.getDate()) {
-        return diffYear - 1;
-    }
-
-    return diffYear;
+    return durationBetweenDatesInYears(startDate, new Date());
 }
 
 function isAccountStartedAfterBonusAge(accountDetails) {
     return durationBetweenDatesInYears(accountDetails.getBirth(), accountDetails.getStartDate()) > BONUS_AGE;
 }
 
+function interestPercent(accountDetails) {
+    return accountDetails.getAge() >= SENIOR_AGE ? SENIOR_PERCENT : INTEREST_PERCENT;
+}
+
 function interest(accountDetails) {
-    let interest = 0;
-    if (isAccountStartedAfterBonusAge(accountDetails)) {
-        if (AGE <= accountDetails.getAge()) {
-            //interest = (PrincipalAmount * DurationInYears * AnnualInterestRate) / 100
-            interest = accountDetails.getBalance()
-                    * durationSinceStartDateInYears(accountDetails.getStartDate()) * SENIOR_PERCENT / 100;
-        } else {
-            interest = accountDetails.getBalance().doubleValue()
-                    * durationSinceStartDateInYears(accountDetails.getStartDate()) * INTEREST_PERCENT / 100;
-        }
-    }
-    return interest;
+    const years = durationSinceStartDateInYears(accountDetails.getStartDate());
+
+    return accountDetails.getBalance() * years * interestPercent(accountDetails) / PERCENT_DIVISOR;
 }
 
 function calculateInterest(accountDetails) {
     if (isAccountStartedAfterBonusAge(accountDetails)) {
         return interest(accountDetails);
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
 module.exports = {

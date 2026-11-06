@@ -1,3 +1,10 @@
+const {
+    UserDaoNotConfiguredError,
+    UserNotFoundError,
+    UserHasNoOrdersError,
+    WrongOrderAmountError,
+} = require('./user-report-errors');
+
 module.exports = class UserReportBuilder {
     constructor() {
         this.userDao = null;
@@ -5,28 +12,33 @@ module.exports = class UserReportBuilder {
 
     getUserTotalOrderAmount(userId) {
         if (this.userDao === null)
-            return null;
+            throw new UserDaoNotConfiguredError();
 
         const user = this.userDao.getUser(userId);
         if (user === null)
-            return -1;
+            throw new UserNotFoundError();
 
         const orders = user.getAllOrders();
 
         if (!orders.length)
-            return -2;
+            throw new UserHasNoOrdersError();
 
         let sum = 0;
         for (let order of orders) {
             if (order.isSubmitted()) {
-                const total = order.total();
-                if (total < 0)
-                    return -3;
-                sum += total;
+                sum += this.getValidOrderTotal(order);
             }
         }
 
         return sum;
+    }
+
+    getValidOrderTotal(order) {
+        const total = order.total();
+        if (total < 0)
+            throw new WrongOrderAmountError();
+
+        return total;
     }
 
     getUserDao() {

@@ -1,32 +1,43 @@
+const {
+    UserDaoNotConfiguredError,
+    UserNotFoundError,
+    UserHasNoOrdersError,
+    WrongOrderAmountError,
+} = require('./user-report-errors');
+
 module.exports = class UserReportController {
     constructor() {
         this.userReportBuilder = null;
     }
 
     getUserTotalOrderAmountView(userId, model) {
-        const totalMessage = this.getUserTotalMessage(userId);
-        if (totalMessage === null)
-            return 'technicalError';
+        try {
+            model.addAttribute('userTotalMessage', this.getUserTotalMessage(userId));
 
-        model.addAttribute('userTotalMessage', totalMessage);
+            return 'userTotal';
+        } catch (error) {
+            if (error instanceof UserDaoNotConfiguredError)
+                return 'technicalError';
 
-        return 'userTotal';
+            throw error;
+        }
     }
 
     getUserTotalMessage(userId) {
-        const amount = this.userReportBuilder.getUserTotalOrderAmount(userId);
+        try {
+            const amount = this.userReportBuilder.getUserTotalOrderAmount(userId);
 
-        if (amount == null)
-            return null;
+            return `User Total: ${amount}$`;
+        } catch (error) {
+            if (error instanceof UserNotFoundError)
+                return 'WARNING: User ID doesn\'t exist.';
+            if (error instanceof UserHasNoOrdersError)
+                return 'WARNING: User have no submitted orders.';
+            if (error instanceof WrongOrderAmountError)
+                return 'ERROR: Wrong order amount.';
 
-        if (amount === -1)
-            return 'WARNING: User ID doesn\'t exist.';
-        if (amount === -2)
-            return 'WARNING: User have no submitted orders.';
-        if (amount === -3)
-            return 'ERROR: Wrong order amount.';
-
-        return `User Total: ${amount}$`;
+            throw error;
+        }
     }
 
     getUserReportBuilder() {
